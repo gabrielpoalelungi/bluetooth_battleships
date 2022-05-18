@@ -1,6 +1,7 @@
 //include the library
 #include "LedControlMS.h"
 #include <SoftwareSerial.h>
+#include <LiquidCrystal_I2C.h>
 
 /*
 Digital 8 is conneted to DIN (Data IN)
@@ -12,6 +13,7 @@ Digital 10 is connected to CS (LOAD)
 #define NBR_MTX 2
 LedControl lc=LedControl(8, 9, 10, NBR_MTX);
 SoftwareSerial MyBlue(2, 3); // RX | TX
+LiquidCrystal_I2C lcd(0x27, 16, 2);
 
 int selectButton = 7;
 int increaseButton = 6;
@@ -38,7 +40,10 @@ void setup() { // initalizes and sets up the initial values. Declaring function 
   Do a wakeup call */
   MyBlue.begin(9600);
   Serial.begin(9600); // setting data rate as 9600 bits per second for serial data communication to computer
+  lcd.begin();
 
+  // Turn on the blacklight and print a message.
+  lcd.backlight();
   for (int i=0; i< NBR_MTX; i++){
     lc.shutdown(i,false); //keep the screen on
     lc.setIntensity(i,8); // set brightness to medium values
@@ -58,7 +63,10 @@ void setup() { // initalizes and sets up the initial values. Declaring function 
   setBoat(4);
   setBoat(5);
   MyBlue.write(1);
-  Serial.println("Wait for opponent.");
+  lcd.print("Wait for");
+  lcd.setCursor(0, 1);
+  lcd.print("opponent.");
+  lcd.setCursor(0, 0);
   while(opponentReady == 0) {
     if (MyBlue.available() > 0) {
       opponentReady = MyBlue.read();
@@ -66,76 +74,129 @@ void setup() { // initalizes and sets up the initial values. Declaring function 
   }
   configureBoards();
   lc.clearAll();
-  Serial.println("Good luck!");
+  lcd.clear();
+  lcd.print("Good luck!");
+  delay(2000);
+  lcd.clear();
 }
 
 void setBoat(int boatLength) {
   // Set boat length
-  Serial.print("Please choose options for boatLength = ");
-  Serial.println(boatLength);
+  
+  lcd.clear();
+  lcd.print("boatlength = ");
+  lcd.print(boatLength);
+  lcd.setCursor(0, 1);
+  lcd.print("Wait 2 s");
+  lcd.setCursor(0, 0);
+  delay(1000);
+  lcd.clear();
+  lcd.print("boatlength = ");
+  lcd.print(boatLength);
+  lcd.setCursor(0, 1);
+  lcd.print("Wait 1 s");
+  lcd.setCursor(0, 0);
+  delay(1000);
+  lcd.clear();
 
-  Serial.println("Please select orientation! ");
+  lcd.print("Select H/V");
   // Set orientation
   while(1) {
     if (digitalRead(selectButton) == LOW) {
-      Serial.println("ORIENTATION SELECTED!");
-      delay(300);
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("Opt selected!");
+      delay(1000);
+      lcd.clear();
       break;
     }
     if (digitalRead(decreaseButton) == LOW) {
       orientation = 1;
-      Serial.println("vertical");
+      lcd.clear();
+      lcd.print("Select H/V");
+      lcd.setCursor(0, 1);
+      lcd.print("vertical");
+      lcd.setCursor(0, 0);
       delay(300);
     }
     if (digitalRead(increaseButton) == LOW) {
       orientation = 0;
-      Serial.println("horizontal");
+      lcd.clear();
+      lcd.print("Select H/V");
+      lcd.setCursor(0, 1);
+      lcd.print("horizontal");
+      lcd.setCursor(0, 0);
       delay(300);
     }
   }
 
-  Serial.println("Please select startRow! ");
+  lcd.print("Select row");
   while(1) {
     if (digitalRead(selectButton) == LOW) {
-      Serial.println("START ROW SELECTED!");
-      delay(300);
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("Opt selected!");
+      delay(1000);
+      lcd.clear();
       break;
     }
     if (digitalRead(decreaseButton) == LOW) {
       if (startColumn > 0)
         startColumn--;
-      Serial.println(startColumn + 1);
+      lcd.clear();
+      lcd.print("Select row");
+      lcd.setCursor(0, 1);
+      lcd.print(startColumn + 1);
+      lcd.setCursor(0, 0);
       delay(300);
     }
     if (digitalRead(increaseButton) == LOW) {
       if (startColumn < 7)
         startColumn++;
-      Serial.println(startColumn + 1);
+      lcd.clear();
+      lcd.print("Select row");
+      lcd.setCursor(0, 1);
+      lcd.print(startColumn + 1);
+      lcd.setCursor(0, 0);
       delay(300);
     }
   }
 
-  Serial.println("Please select startColumn! ");
+  lcd.print("Select column");
   while(1) {
     if (digitalRead(selectButton) == LOW) {
-      Serial.println("START COLUMN SELECTED!");
-      delay(300);
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("Opt selected!");
+      delay(1000);
+      lcd.clear();
       break;
     }
     if (digitalRead(decreaseButton) == LOW) {
       if (startRow > 0)
         startRow--;
-      Serial.println(startRow + 1);
+      lcd.clear();
+      lcd.print("Select column");
+      lcd.setCursor(0, 1);
+      lcd.print(startRow + 1);
+      lcd.setCursor(0, 0);
       delay(300);
     }
     if (digitalRead(increaseButton) == LOW) {
       if (startRow < 7)
         startRow++;
-      Serial.println(startRow + 1);
+      lcd.clear();
+      lcd.print("Select column");
+      lcd.setCursor(0, 1);
+      lcd.print(startRow + 1);
+      lcd.setCursor(0, 0);
       delay(300);
     }
   }
-
+  lcd.print("Press select");
+  lcd.setCursor(0, 1);
+  lcd.print("for next boat");
+  lcd.setCursor(0, 0);
   while (1) {
     // Vertical
     if (orientation == 1) {
@@ -157,6 +218,7 @@ void setBoat(int boatLength) {
       startColumn = 0;
       boatLength = 3;
       delay(300);
+      lcd.clear();
       break;
     }
   }
@@ -194,8 +256,9 @@ void loop() { //declaring function loop
   if (spotsLeft == 0) {
     MyBlue.write(69);
     MyBlue.write(10);
+    lcd.clear();
+    lcd.print("WINNER");
     while(1) {
-      Serial.println("WINNER!");
       lc.writeString(0,"WINNER");
       lc.clearAll();
       delay(1000);
@@ -204,66 +267,106 @@ void loop() { //declaring function loop
   if (myTurn == 1) {
     digitalWrite(turnLED, HIGH);
     int row = 0, column = 0;
-    Serial.println("Please select row to hit! ");
+    lcd.clear();
+    lcd.print("Select rowToHit");
     while(1) {
       if (digitalRead(selectButton) == LOW) {
-        Serial.println("ROW TO HIT SELECTED!");
-        delay(300);
+        lcd.clear();
+        lcd.setCursor(0, 0);
+        lcd.print("Opt selected!");
+        delay(1000);
+        lcd.clear();
         break;
       }
       if (digitalRead(decreaseButton) == LOW) {
         if (column > 0)
           column--;
-        Serial.println(column + 1);
+        lcd.clear();
+        lcd.print("Select rowToHit");
+        lcd.setCursor(0, 1);
+        lcd.print(column + 1);
+        lcd.setCursor(0, 0);
         delay(300);
       }
       if (digitalRead(increaseButton) == LOW) {
         if (column < 7)
           column++;
-        Serial.println(column + 1);
+        lcd.clear();
+        lcd.print("Select rowToHit");
+        lcd.setCursor(0, 1);
+        lcd.print(column + 1);
+        lcd.setCursor(0, 0);
         delay(300);
       }
     }
-    Serial.println("Please select column to hit! ");
+    lcd.print("Select colToHit");
     while(1) {
       if (digitalRead(selectButton) == LOW) {
-        Serial.println("COLUMN TO HIT SELECTED!");
-        delay(300);
+        lcd.clear();
+        lcd.setCursor(0, 0);
+        lcd.print("Opt selected!");
+        delay(1000);
+        lcd.clear();
         break;
       }
       if (digitalRead(decreaseButton) == LOW) {
         if (row > 0)
           row--;
-        Serial.println(row + 1);
+        lcd.clear();
+        lcd.print("Select colToHit");
+        lcd.setCursor(0, 1);
+        lcd.print(row + 1);
+        lcd.setCursor(0, 0);
         delay(300);
       }
       if (digitalRead(increaseButton) == LOW) {
         if (row < 7)
           row++;
-        Serial.println(row + 1);
+        lcd.clear();
+        lcd.print("Select colToHit");
+        lcd.setCursor(0, 1);
+        lcd.print(row + 1);
+        lcd.setCursor(0, 0);
         delay(300);
       }
     }
     if (enemyBoard[row][column] == 1) {
       enemyBoard[row][column] = 2;
-      Serial.println("HIT! YOUR TURN AGAIN!");
+      lcd.print("GJ! Hit again!");
+      lcd.setCursor(0, 1);
       lc.setLed(0, row, column, true);
       spotsLeft--;
-      Serial.print(spotsLeft);
-      Serial.println(" spots left to hit!");
+      lcd.print(spotsLeft);
+      lcd.print(" spots left!");
+      lcd.setCursor(0, 0);
+      delay(2500);
+      lcd.clear();
     } else if (enemyBoard[row][column] == 2) {
-      Serial.println("ALREADY HIT! TRY AGAIN!");
+      lcd.print("ALREADY HIT!");
+      lcd.setCursor(0, 1);
+      lcd.print("TRY AGAIN!");
+      lcd.setCursor(0, 0);
+      delay(1000);
+      lcd.clear();
     }
     else {
-      Serial.println("MISS! OPPONENT TURN");
+      lcd.print("MISS! Opponent");
+      lcd.setCursor(0, 1);
+      lcd.print("turn!");
+      lcd.setCursor(0, 0);
       enemyBoard[row][column] = 2;
       myTurn = 0;
       MyBlue.write(69);
       MyBlue.write(1);
+      digitalWrite(turnLED, LOW);
+      delay(2500);
+      lcd.clear();
     }
   } else {
-    digitalWrite(turnLED, LOW);
-    Serial.println("Wait for opponent!");
+    lcd.print("Wait for");
+    lcd.setCursor(0, 1);
+    lcd.print("opponent.");
+    lcd.setCursor(0, 0);
     while(readyToRead != 69) {
       if (MyBlue.available() > 0) {
         readyToRead = MyBlue.read();
@@ -274,8 +377,9 @@ void loop() { //declaring function loop
     }
     myTurn = MyBlue.read();
     if (myTurn == 10) {
+      lcd.clear();
+      lcd.print("LOSER!");
       while (1) {
-        Serial.println("LOSER!");
         lc.writeString(0,"LOSER");
         lc.clearAll();
         delay(1000);
