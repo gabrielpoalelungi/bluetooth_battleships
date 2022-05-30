@@ -22,6 +22,8 @@ int turnLED = 4;
 byte enemyBoard[8][8];
 byte myBoard[8][8];
 
+
+
 int enemyBoardReceived = 0;
 int readyToRead = 0;
 int sent = 0;
@@ -30,14 +32,30 @@ int spotsLeft = 12;
 int myTurn = 1;
 
 int orientation;
-int startRow = 0;
+int startRow = 0;    
 int startColumn = 0;
 int boatLength = 3;
 int select = 0;
+int turnLedOnTimer = 1;
 
 void setup() { // initalizes and sets up the initial values. Declaring function setup.
   /* The display module is in power-saving mode on startup.
   Do a wakeup call */
+  cli();
+  //set timer1 interrupt at 1Hz
+  TCCR1A = 0;// set entire TCCR1A register to 0
+  TCCR1B = 0;// same for TCCR1B
+  TCNT1  = 0;//initialize counter value to 0
+  // set compare match register for 1hz increments
+  OCR1A = 15624;// = (16*10^6) / (1*1024) - 1 (must be <65536)
+  // turn on CTC mode
+  TCCR1B |= (1 << WGM12);
+  // Set CS10 and CS12 bits for 1024 prescaler
+  TCCR1B |= (1 << CS12) | (1 << CS10);  
+  // enable timer compare interrupt
+  TIMSK1 |= (1 << OCIE1A);
+  sei();
+  
   MyBlue.begin(9600);
   Serial.begin(9600); // setting data rate as 9600 bits per second for serial data communication to computer
   lcd.begin();
@@ -78,6 +96,26 @@ void setup() { // initalizes and sets up the initial values. Declaring function 
   lcd.print("Good luck!");
   delay(2000);
   lcd.clear();
+}
+
+ISR(TIMER1_COMPA_vect) {
+  if (turnLedOnTimer == 1) {
+    
+    for (int i = 0; i < 8; i++)
+      for (int j = 0; j < 8; j++) 
+        if (enemyBoard[i][j] == 3){
+         lc.setLed(0, i, j, true);
+      }
+    turnLedOnTimer = 0;
+  } else {
+    
+    for (int i = 0; i < 8; i++)
+      for (int j = 0; j < 8; j++)
+        if (enemyBoard[i][j] == 3) {
+         lc.setLed(0, i, j, false);
+      }
+    turnLedOnTimer = 1;
+  }
 }
 
 void setBoat(int boatLength) {
@@ -258,6 +296,7 @@ void loop() { //declaring function loop
     MyBlue.write(10);
     lcd.clear();
     lcd.print("WINNER");
+    TCCR1B &= ~((1 << CS12) | (1 << CS11) | (1 << CS10));
     while(1) {
       lc.writeString(0,"WINNER");
       lc.clearAll();
@@ -331,17 +370,17 @@ void loop() { //declaring function loop
       }
     }
     if (enemyBoard[row][column] == 1) {
-      enemyBoard[row][column] = 2;
+      enemyBoard[row][column] = 3;
       lcd.print("GJ! Hit again!");
       lcd.setCursor(0, 1);
-      lc.setLed(0, row, column, true);
+      
       spotsLeft--;
       lcd.print(spotsLeft);
       lcd.print(" spots left!");
       lcd.setCursor(0, 0);
       delay(2500);
       lcd.clear();
-    } else if (enemyBoard[row][column] == 2) {
+    } else if (enemyBoard[row][column] == 2 || enemyBoard[row][column] == 3) {
       lcd.print("ALREADY HIT!");
       lcd.setCursor(0, 1);
       lcd.print("TRY AGAIN!");
@@ -355,6 +394,7 @@ void loop() { //declaring function loop
       lcd.print("turn!");
       lcd.setCursor(0, 0);
       enemyBoard[row][column] = 2;
+      lc.setLed(0, row, column, true);
       myTurn = 0;
       MyBlue.write(69);
       MyBlue.write(1);
@@ -379,6 +419,7 @@ void loop() { //declaring function loop
     if (myTurn == 10) {
       lcd.clear();
       lcd.print("LOSER!");
+      TCCR1B &= ~((1 << CS12) | (1 << CS11) | (1 << CS10));
       while (1) {
         lc.writeString(0,"LOSER");
         lc.clearAll();
