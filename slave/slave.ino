@@ -55,6 +55,7 @@ void setup() { // initalizes and sets up the initial values. Declaring function 
   sei();
   
   MyBlue.begin(9600);
+  Serial.begin(9600);
   lcd.begin();
 
   // Turn on the blacklight and print a message.
